@@ -36,10 +36,60 @@ Output:
 
 ## API
 
-### `init()`
+### Core Functions
+
+#### `init()`
 One function, behavior controlled by environment variables:
 ```rust
 custom_tracing_logger::init();
+```
+
+#### `validate_config()` and `print_config()`
+Validate and display current logging configuration:
+```rust
+// Check configuration without initializing
+match custom_tracing_logger::validate_config() {
+    Ok(config) => println!("Config: {}", config),
+    Err(error) => eprintln!("Error: {}", error),
+}
+
+// Print configuration to console
+custom_tracing_logger::print_config();
+```
+
+### Convenience Macros
+
+#### `log_request!`
+Structured HTTP request logging:
+```rust
+use custom_tracing_logger::log_request;
+
+log_request!("GET", "/api/users", 200, 45);
+log_request!("POST", "/api/users", 201, 120, user_id = 123);
+```
+
+#### `log_error!`
+Structured error logging:
+```rust
+use custom_tracing_logger::log_error;
+
+log_error!("DB_CONNECTION_FAILED", "Database timeout");
+log_error!("AUTH_FAILED", "Invalid token", user_id = 123, ip = "192.168.1.1");
+```
+
+### Structured Logging Helpers
+
+```rust
+use custom_tracing_logger::structured;
+
+// HTTP requests
+structured::http_request("GET", "/api/users", 200, 45);
+
+// Database operations
+structured::database_op("SELECT", "users", 25, Some(10));
+
+// User actions
+structured::user_action(123, "login", Some("web"));
 ```
 
 **Environment Variables:**

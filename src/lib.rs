@@ -12,6 +12,48 @@ use tracing_subscriber::{
 };
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 
+/// Convenience macro for HTTP request logging
+#[macro_export]
+macro_rules! log_request {
+    ($method:expr, $path:expr, $status:expr, $duration:expr) => {
+        tracing::info!(
+            method = $method,
+            path = $path, 
+            status = $status,
+            duration_ms = $duration,
+            "HTTP request completed"
+        );
+    };
+    ($method:expr, $path:expr, $status:expr, $duration:expr, $($key:ident = $value:expr),+) => {
+        tracing::info!(
+            method = $method,
+            path = $path,
+            status = $status, 
+            duration_ms = $duration,
+            $($key = $value),+,
+            "HTTP request completed"
+        );
+    };
+}
+
+/// Convenience macro for error logging with context
+#[macro_export]
+macro_rules! log_error {
+    ($error_code:expr, $message:expr) => {
+        tracing::error!(
+            error_code = $error_code,
+            $message
+        );
+    };
+    ($error_code:expr, $message:expr, $($key:ident = $value:expr),+) => {
+        tracing::error!(
+            error_code = $error_code,
+            $($key = $value),+,
+            $message
+        );
+    };
+}
+
 /// Initialize the JSON logger
 /// 
 /// Behavior controlled by environment variables:
@@ -85,6 +127,42 @@ pub fn init() {
     }
 }
 
+/// Validate current logging configuration without initializing
+pub fn validate_config() -> Result<String, String> {
+    let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+    let log_file_dir = std::env::var("LOG_FILE_DIR").ok();
+    let log_file_prefix = std::env::var("LOG_FILE_PREFIX").unwrap_or_else(|_| "app".to_string());
+    let file_only = std::env::var("LOG_FILE_ONLY").unwrap_or_default() == "true";
+    
+    // Validate RUST_LOG format by trying to create an EnvFilter
+    if let Err(e) = EnvFilter::try_new(&rust_log.trim()) {
+        return Err(format!("Invalid RUST_LOG format: {}", e));
+    }
+    
+    // Validate file directory if specified
+    if let Some(ref dir) = log_file_dir {
+        if let Err(e) = std::fs::create_dir_all(dir) {
+            return Err(format!("Cannot create log directory '{}': {}", dir, e));
+        }
+    }
+    
+    let config = match (log_file_dir.as_ref(), file_only) {
+        (Some(dir), false) => format!("Console + File logging to {}/{}.YYYY-MM-DD", dir, log_file_prefix),
+        (Some(dir), true) => format!("File-only logging to {}/{}.YYYY-MM-DD", dir, log_file_prefix),
+        (None, _) => "Console-only logging".to_string(),
+    };
+    
+    Ok(format!("✓ RUST_LOG: {}\n✓ Mode: {}", rust_log, config))
+}
+
+/// Print current logging configuration
+pub fn print_config() {
+    match validate_config() {
+        Ok(config) => println!("Logging Configuration:\n{}", config),
+        Err(error) => eprintln!("Logging Configuration Error: {}", error),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,6 +182,49 @@ mod tests {
         assert_eq!(prefix, "test");
         std::env::remove_var("LOG_FILE_PREFIX");
     }
+}
 
-
+/// Structured logging helpers
+pub mod structured {
+    use tracing::{info, error};
+    
+    /// Log HTTP request with standard fields
+    pub fn http_request(method: &str, path: &str, status: u16, duration_ms: u64) {
+        info!(
+            method = method,
+            path = path,
+            status = status,
+            duration_ms = duration_ms,
+            "HTTP request completed"
+        );
+    }
+    
+    /// Log database operation
+    pub fn database_op(operation: &str, table: &str, duration_ms: u64, rows_affected: Option<u64>) {
+        info!(
+            operation = operation,
+            table = table,
+            duration_ms = duration_ms,
+            rows_affected = rows_affected,
+            "Database operation completed"
+        );
+    }
+    
+    /// Log user action with context
+    pub fn user_action(user_id: u64, action: &str, resource: Option<&str>) {
+        info!(
+            user_id = user_id,
+            action = action,
+            resource = resource,
+            "User action performed"
+        );
+    }
+    
+    /// Log error with structured context
+    pub fn error_with_context(error_code: &str, message: &str) {
+        error!(
+            error_code = error_code,
+            "{}" = message
+        );
+    }
 }
