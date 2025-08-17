@@ -1,0 +1,38 @@
+[package]
+name = "custom-tracing-logger"
+version = "0.1.0"
+edition = "2021"
+authors = ["HoangVo <hoangvohuy1001@gmail.com>"]
+description = "A minimal JSON logger for Rust using the tracing ecosystem with one-line initialization"
+license = "MIT"
+repository = "https://github.com/huyhoang1001/custom-tracing-logger"
+homepage = "https://github.com/huyhoang1001/custom-tracing-logger"
+documentation = "https://docs.rs/custom-tracing-logger"
+keywords = ["logging", "tracing", "json", "structured", "observability"]
+categories = ["development-tools::debugging", "development-tools::profiling"]
+readme = "README.md"
+exclude = [
+    "target/", 
+    "logs/", 
+    "logs_*/",
+    "BLOG.md", 
+    "DEEP_DIVE.md",
+    "PUBLISHING.md",
+    "examples/debug_env.rs",
+    "examples/terminal_test.rs",
+    "examples/test_env.rs",
+    "examples/test_off.rs",
+    "examples/comparison.rs",
+    ".env",
+    "*.log"
+]
+
+[dependencies]
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+serde_json = "1.0"
+tracing-appender = "0.2"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
+dotenv = "0.15"
