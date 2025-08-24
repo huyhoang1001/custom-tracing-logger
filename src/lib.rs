@@ -61,6 +61,7 @@ macro_rules! log_error {
 /// - `LOG_FILE_DIR`: Directory for log files (e.g., "./logs")
 /// - `LOG_FILE_PREFIX`: Prefix for log files (e.g., "myapp")
 /// - `LOG_FILE_ONLY`: Set to "true" to disable console output
+/// - `LOG_ENABLE_SPANS`: Set to "false" to disable #[instrument] span events (default: "true")
 /// 
 /// # Examples
 /// ```no_run
@@ -71,6 +72,9 @@ macro_rules! log_error {
 /// custom_tracing_logger::init();
 /// 
 /// // File only (with LOG_FILE_ONLY=true)
+/// custom_tracing_logger::init();
+/// 
+/// // Disable #[instrument] spans (with LOG_ENABLE_SPANS=false)
 /// custom_tracing_logger::init();
 /// ```
 pub fn init() {
@@ -84,43 +88,60 @@ pub fn init() {
     let log_file_dir = std::env::var("LOG_FILE_DIR").ok();
     let log_file_prefix = std::env::var("LOG_FILE_PREFIX").unwrap_or_else(|_| "app".to_string());
     let file_only = std::env::var("LOG_FILE_ONLY").unwrap_or_default() == "true";
+    let enable_spans = std::env::var("LOG_ENABLE_SPANS").unwrap_or_else(|_| "true".to_string()) == "true";
 
     let registry = tracing_subscriber::registry().with(env_filter);
 
     match (log_file_dir, file_only) {
         // File logging + console
         (Some(log_dir), false) => {
-            let console_layer = fmt::layer()
+            let mut console_layer = fmt::layer()
                 .json()
-                .with_current_span(false)
+                .with_current_span(enable_spans)
                 .with_span_list(false);
             
+            if enable_spans {
+                console_layer = console_layer.with_span_events(fmt::format::FmtSpan::ENTER | fmt::format::FmtSpan::EXIT);
+            }
+            
             let file_appender = RollingFileAppender::new(Rotation::DAILY, &log_dir, &log_file_prefix);
-            let file_layer = fmt::layer()
+            let mut file_layer = fmt::layer()
                 .json()
-                .with_current_span(false)
+                .with_current_span(enable_spans)
                 .with_span_list(false)
                 .with_writer(file_appender);
+            
+            if enable_spans {
+                file_layer = file_layer.with_span_events(fmt::format::FmtSpan::ENTER | fmt::format::FmtSpan::EXIT);
+            }
             
             let _ = registry.with(console_layer).with(file_layer).try_init();
         },
         // File logging only (no console)
         (Some(log_dir), true) => {
             let file_appender = RollingFileAppender::new(Rotation::DAILY, &log_dir, &log_file_prefix);
-            let file_layer = fmt::layer()
+            let mut file_layer = fmt::layer()
                 .json()
-                .with_current_span(false)
+                .with_current_span(enable_spans)
                 .with_span_list(false)
                 .with_writer(file_appender);
+            
+            if enable_spans {
+                file_layer = file_layer.with_span_events(fmt::format::FmtSpan::ENTER | fmt::format::FmtSpan::EXIT);
+            }
             
             let _ = registry.with(file_layer).try_init();
         },
         // Console only
         (None, _) => {
-            let console_layer = fmt::layer()
+            let mut console_layer = fmt::layer()
                 .json()
-                .with_current_span(false)
+                .with_current_span(enable_spans)
                 .with_span_list(false);
+            
+            if enable_spans {
+                console_layer = console_layer.with_span_events(fmt::format::FmtSpan::ENTER | fmt::format::FmtSpan::EXIT);
+            }
             
             let _ = registry.with(console_layer).try_init();
         }
@@ -133,6 +154,7 @@ pub fn validate_config() -> Result<String, String> {
     let log_file_dir = std::env::var("LOG_FILE_DIR").ok();
     let log_file_prefix = std::env::var("LOG_FILE_PREFIX").unwrap_or_else(|_| "app".to_string());
     let file_only = std::env::var("LOG_FILE_ONLY").unwrap_or_default() == "true";
+    let enable_spans = std::env::var("LOG_ENABLE_SPANS").unwrap_or_else(|_| "true".to_string()) == "true";
     
     // Validate RUST_LOG format by trying to create an EnvFilter
     if let Err(e) = EnvFilter::try_new(&rust_log.trim()) {
@@ -152,7 +174,9 @@ pub fn validate_config() -> Result<String, String> {
         (None, _) => "Console-only logging".to_string(),
     };
     
-    Ok(format!("✓ RUST_LOG: {}\n✓ Mode: {}", rust_log, config))
+    let spans_status = if enable_spans { "enabled" } else { "disabled" };
+    
+    Ok(format!("✓ RUST_LOG: {}\n✓ Mode: {}\n✓ Spans: {}", rust_log, config, spans_status))
 }
 
 /// Print current logging configuration

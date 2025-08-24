@@ -1,98 +1,65 @@
-//! Example: Web server logging patterns
-//! Run with: $env:RUST_LOG='info'; cargo run --example web_server
+//! Example: Web server logging with convenience macros
+//! Run with: cargo run --example web_server
 
-use custom_tracing_logger::{self, log_request, structured};
-use tracing::{info, warn, error, instrument};
-use std::time::Instant;
-
-#[derive(Debug)]
-struct User {
-    id: u64,
-    name: String,
-}
+use custom_tracing_logger::{log_request, log_error};
+use tracing::{info, warn, instrument};
 
 #[instrument]
-async fn authenticate_user(token: &str) -> Result<User, &'static str> {
-    let start = Instant::now();
-    
-    // Simulate auth logic
-    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+fn authenticate_user(token: &str) -> Result<u64, &'static str> {
+    info!("Checking authentication token");
     
     if token == "valid_token" {
-        let user = User { id: 123, name: "Alice".to_string() };
-        
-        structured::user_action(user.id, "login", Some("web"));
-        structured::database_op("SELECT", "users", start.elapsed().as_millis() as u64, Some(1));
-        
-        Ok(user)
+        info!("Authentication successful");
+        Ok(123) // user_id
     } else {
-        error!(
-            error_code = "AUTH_FAILED",
-            token_prefix = &token[..token.len().min(4)],
-            "Authentication failed"
-        );
+        log_error!("AUTH_FAILED", "Invalid authentication token", token_prefix = &token[..token.len().min(4)]);
         Err("Invalid token")
     }
 }
 
 #[instrument]
-async fn handle_request(method: &str, path: &str) -> (u16, String) {
-    let start = Instant::now();
-    
+fn handle_request(method: &str, path: &str) -> (u16, String) {
     match path {
         "/api/users" => {
-            match authenticate_user("valid_token").await {
-                Ok(user) => {
-                    log_request!(method, path, 200, start.elapsed().as_millis() as u64, user_id = user.id);
-                    (200, format!("Hello, {}!", user.name))
+            match authenticate_user("valid_token") {
+                Ok(user_id) => {
+                    log_request!(method, path, 200, 45, user_id = user_id);
+                    (200, "User data".to_string())
                 }
                 Err(_) => {
-                    log_request!(method, path, 401, start.elapsed().as_millis() as u64);
+                    log_request!(method, path, 401, 12);
                     (401, "Unauthorized".to_string())
                 }
             }
         }
         "/health" => {
-            log_request!(method, path, 200, start.elapsed().as_millis() as u64);
+            log_request!(method, path, 200, 5);
             (200, "OK".to_string())
         }
         _ => {
-            warn!(
-                method = method,
-                path = path,
-                "Route not found"
-            );
-            log_request!(method, path, 404, start.elapsed().as_millis() as u64);
+            warn!(method = method, path = path, "Route not found");
+            log_request!(method, path, 404, 8);
             (404, "Not Found".to_string())
         }
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     custom_tracing_logger::init();
     
-    info!("Web server starting up");
-    custom_tracing_logger::print_config();
+    info!("Web server starting");
     
-    // Simulate some requests
+    // Simulate requests
     let requests = vec![
         ("GET", "/api/users"),
         ("GET", "/health"),
-        ("POST", "/api/unknown"),
-        ("GET", "/api/users"),
+        ("POST", "/unknown"),
     ];
     
     for (method, path) in requests {
-        let (status, response) = handle_request(method, path).await;
-        info!(
-            method = method,
-            path = path,
-            status = status,
-            response_length = response.len(),
-            "Request processed"
-        );
+        let (status, _response) = handle_request(method, path);
+        info!(method = method, path = path, status = status, "Request completed");
     }
     
-    info!("Web server shutting down");
+    info!("Web server stopped");
 }

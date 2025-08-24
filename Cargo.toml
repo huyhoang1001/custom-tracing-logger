@@ -18,11 +18,6 @@ exclude = [
     "BLOG.md", 
     "DEEP_DIVE.md",
     "PUBLISHING.md",
-    "examples/debug_env.rs",
-    "examples/terminal_test.rs",
-    "examples/test_env.rs",
-    "examples/test_off.rs",
-    "examples/comparison.rs",
     "examples/token",
     ".env",
     "*.log"

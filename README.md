@@ -97,6 +97,7 @@ structured::user_action(123, "login", Some("web"));
 - `LOG_FILE_DIR`: Directory for log files (e.g., "./logs")
 - `LOG_FILE_PREFIX`: Prefix for log files (default: "app")
 - `LOG_FILE_ONLY`: Set to "true" to disable console output
+- `LOG_ENABLE_SPANS`: Set to "false" to disable #[instrument] span events (default: "true")
 
 ## Filtering Examples
 
@@ -115,6 +116,12 @@ RUST_LOG=info LOG_FILE_DIR=./logs LOG_FILE_PREFIX=myapp cargo run
 RUST_LOG=info LOG_FILE_DIR=./logs LOG_FILE_ONLY=true cargo run
 ```
 
+### Disable Span Events
+```powershell
+# Minimal logging without #[instrument] enter/exit events
+$env:LOG_ENABLE_SPANS='false'; cargo run
+```
+
 ### Module Filtering
 ```powershell
 # Specific modules
@@ -122,6 +129,9 @@ $env:RUST_LOG='myapp::auth_service=info,myapp::payment_service=warn'; cargo run
 
 # Turn off noisy modules
 $env:RUST_LOG='debug,tokio=info,hyper=warn'; cargo run
+
+# Minimal logging (no spans)
+$env:RUST_LOG='info'; $env:LOG_ENABLE_SPANS='false'; cargo run
 ```
 
 ## Examples
