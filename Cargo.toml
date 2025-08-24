@@ -1,12 +1,12 @@
 [package]
 name = "custom-tracing-logger"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["HoangVo <hoangvohuy1001@gmail.com>"]
 description = "A minimal JSON logger for Rust using the tracing ecosystem with one-line initialization"
 license = "MIT"
 repository = "https://github.com/huyhoang1001/custom-tracing-logger"
-homepage = "https://github.com/huyhoang1001/custom-tracing-logger"
+homepage = "https://github.com/huyhoang1001/custom-tracing-logger/blob/main/DEEP_DIVE.md"
 documentation = "https://docs.rs/custom-tracing-logger"
 keywords = ["logging", "tracing", "json", "structured", "observability"]
 categories = ["development-tools::debugging", "development-tools::profiling"]
@@ -23,6 +23,7 @@ exclude = [
     "examples/test_env.rs",
     "examples/test_off.rs",
     "examples/comparison.rs",
+    "examples/token",
     ".env",
     "*.log"
 ]
