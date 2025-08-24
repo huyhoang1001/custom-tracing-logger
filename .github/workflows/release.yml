@@ -52,27 +52,25 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: publish
+    permissions:
+      contents: write
     
     steps:
     - uses: actions/checkout@v4
     
     - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          ## Changes
+      run: |
+        gh release create ${{ github.ref_name }} \
+          --title "Release ${{ github.ref_name }}" \
+          --notes "## Changes
           
           See [CHANGELOG.md](CHANGELOG.md) for details.
           
           ## Installation
           
-          ```toml
+          \`\`\`toml
           [dependencies]
-          custom-tracing-logger = "${{ github.ref_name }}"
-          ```
-        draft: false
-        prerelease: false
+          custom-tracing-logger = \"${{ github.ref_name }}\"
+          \`\`\`"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
