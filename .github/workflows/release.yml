@@ -45,13 +45,13 @@ jobs:
           exit 1
         fi
     
-    - name: Publish to crates.io
-      run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+    - name: Publish to crates.io (dry run)
+      run: cargo publish --dry-run
 
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: publish
+    needs: test
     permissions:
       contents: write
     
