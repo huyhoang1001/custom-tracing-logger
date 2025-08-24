@@ -1,0 +1,46 @@
+name: Test Release (No Tag)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_version:
+        description: 'Version to test (e.g., v0.1.3)'
+        required: true
+        default: 'v0.1.3'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-release-creation:
+    name: Test GitHub Release Creation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Test Release Creation (Dry Run)
+      run: |
+        echo "Would create release: ${{ github.event.inputs.test_version }}"
+        echo "Title: Release ${{ github.event.inputs.test_version }}"
+        echo "Notes:"
+        echo "## Changes"
+        echo ""
+        echo "See [CHANGELOG.md](CHANGELOG.md) for details."
+        echo ""
+        echo "## Installation"
+        echo ""
+        echo "\`\`\`toml"
+        echo "[dependencies]"
+        echo "custom-tracing-logger = \"${{ github.event.inputs.test_version }}\""
+        echo "\`\`\`"
+        
+        # Test if gh CLI works
+        gh --version
+        
+        # Test authentication (without creating release)
+        gh auth status
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
