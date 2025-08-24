@@ -1,9 +1,8 @@
 //! Example showing selective module monitoring using RUST_LOG
-//! 
+//!
 //! Run with:
 //! $env:RUST_LOG='off,selective::auth_service=info,selective::payment_service=warn'; cargo run --example selective
 
-use custom_tracing_logger;
 use tracing::info;
 
 // Simulate different modules
@@ -36,10 +35,10 @@ async fn main() {
     custom_tracing_logger::init();
 
     info!("App started");
-    
+
     auth_service::login();
     payment_service::process_payment();
     noisy_module::spam_logs();
-    
+
     info!("App finished");
 }
