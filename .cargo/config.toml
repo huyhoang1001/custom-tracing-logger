@@ -1,0 +1,20 @@
+[build]
+# Use all CPU cores
+jobs = 0
+
+# Faster linker on Linux
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# Faster linker on macOS  
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# CI profile for fast builds
+[profile.ci]
+inherits = "dev"
+opt-level = 1
+debug = false
+incremental = true
+codegen-units = 16

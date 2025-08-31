@@ -7,6 +7,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 1
+  RUST_BACKTRACE: 1
+  RUSTFLAGS: "-C codegen-units=16 -C debuginfo=0"
 
 jobs:
   test:
@@ -18,12 +21,40 @@ jobs:
     
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
     
-    - name: Run tests
-      run: cargo test --verbose
+    - name: Install fast linker
+      run: sudo apt-get update && sudo apt-get install -y lld
+    
+    - name: Setup sccache
+      run: |
+        cargo install sccache
+        echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        sccache --start-server
+    
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: true
+        cache-all-crates: true
+    
+    - name: Check formatting
+      run: cargo fmt --all -- --check
     
     - name: Run clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
+    
+    - name: Build (optimized)
+      run: cargo build --profile ci
+    
+    - name: Run tests (parallel)
+      run: |
+        cargo install cargo-nextest
+        cargo nextest run --profile ci
+    
+    - name: Show cache stats
+      run: sccache --show-stats
 
   publish:
     name: Publish to crates.io
@@ -35,6 +66,11 @@ jobs:
     
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
+    
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: true
     
     - name: Verify version matches tag
       run: |
