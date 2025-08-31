@@ -4,7 +4,7 @@ A minimal Rust crate for structured JSON logging using the `tracing` ecosystem.
 
 ## Features
 
-- **JSON Output**: All logs formatted as structured JSON
+- **JSON Output**: All logs formatted as structured JSON.
 - **Simple API**: One-line initialization
 - **Selective Monitoring**: Control logging per module
 - **Environment Variable Support**: Respects `RUST_LOG`
