@@ -48,10 +48,13 @@ jobs:
     - name: Build (optimized)
       run: cargo build --profile ci
     
+    - name: Install cargo-nextest
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-nextest
+    
     - name: Test (parallel)
-      run: |
-        cargo install cargo-nextest
-        cargo nextest run --profile ci
+      run: cargo nextest run --profile ci
     
     - name: Build examples
       run: |
