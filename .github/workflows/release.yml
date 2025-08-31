@@ -51,7 +51,7 @@ jobs:
         tool: cargo-nextest
     
     - name: Run tests (parallel)
-      run: cargo nextest run --profile ci
+      run: cargo nextest run
     
     - name: Show cache stats
       run: sccache --show-stats

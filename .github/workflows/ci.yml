@@ -54,7 +54,7 @@ jobs:
         tool: cargo-nextest
     
     - name: Test (parallel)
-      run: cargo nextest run --profile ci
+      run: cargo nextest run
     
     - name: Build examples
       run: |
