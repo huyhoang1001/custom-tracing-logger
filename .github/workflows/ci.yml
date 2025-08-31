@@ -30,10 +30,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y lld
     
     - name: Setup sccache
-      run: |
-        cargo install sccache
-        echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-        sccache --start-server
+      uses: mozilla-actions/sccache-action@v0.0.4
     
     - name: Rust Cache (Optimized)
       uses: Swatinem/rust-cache@v2
@@ -64,9 +61,6 @@ jobs:
     
     - name: Show cache stats
       run: sccache --show-stats
-    
-    - name: Show cache stats
-      run: sccache --show-stats
 
   build:
     name: Multi-platform Build
@@ -91,10 +85,7 @@ jobs:
         fi
     
     - name: Setup sccache
-      run: |
-        cargo install sccache
-        echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-        sccache --start-server
+      uses: mozilla-actions/sccache-action@v0.0.4
     
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
