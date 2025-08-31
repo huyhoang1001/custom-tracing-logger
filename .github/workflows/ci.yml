@@ -2,12 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, test-commit ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, test-commit ]
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 1
+  RUST_BACKTRACE: 1
+  # Optimize for CI builds
+  RUSTFLAGS: "-C codegen-units=16 -C debuginfo=0"
 
 jobs:
   test:
@@ -19,33 +23,50 @@ jobs:
     
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
-    
-    - name: Cache dependencies
-      uses: actions/cache@v3
       with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        components: rustfmt, clippy
     
-    - name: Run tests
-      run: cargo test --verbose
+    - name: Install fast linker
+      run: sudo apt-get update && sudo apt-get install -y lld
     
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.4
+    
+    - name: Rust Cache (Optimized)
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: true
+        cache-all-crates: true
+    
+    # Fastest checks first (fail fast)
     - name: Check formatting
       run: cargo fmt --all -- --check
     
     - name: Run clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
     
+    - name: Build (optimized)
+      run: cargo build --profile ci
+    
+    - name: Install cargo-nextest
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-nextest
+    
+    - name: Test (parallel)
+      run: cargo nextest run
+    
     - name: Build examples
       run: |
-        cargo build --examples
+        cargo build --examples --profile ci
         cargo run --example simple_usage
         cargo run --example configuration
+    
+    - name: Show cache stats
+      run: sccache --show-stats
 
   build:
-    name: Build
+    name: Multi-platform Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -57,5 +78,25 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
     
-    - name: Build
-      run: cargo build --release --verbose
+    - name: Install fast linker (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        if [ "$RUNNER_OS" = "Linux" ]; then
+          sudo apt-get update && sudo apt-get install -y lld
+        elif [ "$RUNNER_OS" = "macOS" ]; then
+          brew install llvm
+        fi
+    
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.4
+    
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: true
+    
+    - name: Build (optimized)
+      run: cargo build --profile ci
+      env:
+        CARGO_INCREMENTAL: 1
+        RUSTFLAGS: "-C codegen-units=16 -C debuginfo=0"
