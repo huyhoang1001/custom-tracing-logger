@@ -32,3 +32,11 @@ tracing-appender = "0.2"
 [dev-dependencies]
 tokio = { version = "1.0", features = ["rt-multi-thread", "macros", "time"] }
 dotenv = "0.15"
+
+# CI profile for fast builds
+[profile.ci]
+inherits = "dev"
+opt-level = 1
+debug = false
+incremental = true
+codegen-units = 16

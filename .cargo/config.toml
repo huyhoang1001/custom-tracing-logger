@@ -9,11 +9,3 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 # Faster linker on macOS  
 [target.x86_64-apple-darwin]
 rustflags = ["-C", "link-arg=-fuse-ld=lld"]
-
-# CI profile for fast builds
-[profile.ci]
-inherits = "dev"
-opt-level = 1
-debug = false
-incremental = true
-codegen-units = 16
