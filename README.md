@@ -181,5 +181,3 @@ custom_tracing_logger::init();
 ## License
 
 MIT
-
-<!-- Test cache optimization - second run should be much faster --!>
