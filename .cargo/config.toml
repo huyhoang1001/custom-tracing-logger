@@ -1,6 +1,5 @@
 [build]
-# Use all CPU cores
-jobs = 0
+# Use default job count (all CPU cores)
 
 # Faster linker on Linux
 [target.x86_64-unknown-linux-gnu]
